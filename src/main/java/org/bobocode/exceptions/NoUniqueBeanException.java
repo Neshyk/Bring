@@ -1,2 +1,10 @@
-package org.bobocode.exceptions;public class NoUniqueBeanException {
+package org.bobocode.exceptions;
+
+/**
+ * No unique Bean exception
+ */
+public class NoUniqueBeanException extends RuntimeException{
+    public NoUniqueBeanException() {
+        super();
+    }
 }

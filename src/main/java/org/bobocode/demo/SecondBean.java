@@ -2,8 +2,8 @@ package org.bobocode.demo;
 
 import org.bobocode.annotation.Bean;
 
-@Bean
-public class FirstBean {
-    public FirstBean() {
+@Bean("theSecondBean")
+public class SecondBean {
+    public SecondBean() {
     }
 }
