@@ -2,10 +2,12 @@ package org.bobocode;
 
 import lombok.SneakyThrows;
 import org.bobocode.annotation.Bean;
+import org.bobocode.annotation.Inject;
 import org.bobocode.exceptions.NoSuchBeanException;
 import org.bobocode.exceptions.NoUniqueBeanException;
 import org.reflections.Reflections;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +28,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         this.context = new ConcurrentHashMap<>();
         this.packageName = packageName;
         scan();
+        initialize();
     }
 
     /**
@@ -37,6 +40,14 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         beanTypes.forEach(beanType -> storeBean(getBeanName(beanType),createInstance(beanType)));
     }
 
+    /**
+     * Initializing beans in context
+     */
+    private void initialize(){
+        Objects.requireNonNull(context);
+        context.values().forEach(this::initializeBean);
+    }
+
     /** Store bean in the context
      *
      * @param beanName The name of bean
@@ -46,7 +57,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     private <T> void storeBean(String beanName, T bean){
         Objects.requireNonNull(beanName);
         Objects.requireNonNull(bean);
-        System.out.println("Bring Framework: Initialize bean >>> "+beanName+": "+bean+":"+bean.getClass().getName());
+        System.out.println("Bring Framework: Creating bean >>> "+beanName+": "+bean+":"+bean.getClass().getName());
         context.put(beanName, bean);
     }
 
@@ -67,6 +78,26 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         }
         return beanName;
     }
+
+    private <T> void initializeBean(T bean){
+        Objects.requireNonNull(bean);
+        injectBean(bean);
+    }
+
+    private <T> void injectBean(T bean){
+        Field[] fields = bean.getClass().getDeclaredFields();
+        Arrays.stream(fields)
+                .filter(field -> field.isAnnotationPresent(Inject.class))
+                .forEach(field-> injectField(field, field.getType(), bean));
+    }
+    @SneakyThrows
+    private <T, R> void injectField(Field field, Class<R> beanType, T bean){
+        R value = getBean(beanType);
+        field.setAccessible(true);
+        field.set(bean,value);
+        System.out.println("Bring Framework: Inject field >>> Bean: "+bean+". Field name: "+field.getName()+". Value: "+value);
+    }
+
     private <T> Predicate<Map.Entry<String, Object>> filterByBeanType(Class<T> beanType) {
         return (entry) -> entry.getValue().getClass().isAssignableFrom(beanType);
     }
@@ -77,6 +108,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .orElseThrow(IllegalArgumentException::new);
         return beanType.cast(constructor.newInstance());
     }
+
 
     @Override
     public <T> T getBean(Class<T> beanType) throws NoSuchBeanException, NoUniqueBeanException {

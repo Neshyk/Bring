@@ -20,5 +20,6 @@ public class Main {
         System.out.println("Get Second Bean from context: "+secondBean);
         FirstBean firstBeanByName = context.getBean("firstBean", FirstBean.class);
         System.out.println("Get First Bean by Name from context: "+firstBeanByName);
+        System.out.println("Firsts bean field: "+firstBeanByName.getBean());
     }
 }
